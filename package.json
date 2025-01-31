@@ -1,0 +1,19 @@
+{
+  "name": "starters",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "(cd server && bun dev) & (cd client && bun dev)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/agusgarcia3007/starters.git"
+  },
+  "author": "Agustin Garcia",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/agusgarcia3007/starters/issues"
+  },
+  "homepage": "https://github.com/agusgarcia3007/starters#readme",
+  "description": ""
+}
