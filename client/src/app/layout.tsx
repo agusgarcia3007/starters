@@ -21,15 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <Providers>
-        <body
-          className={`${poppins.variable} ${poppins.className} antialiased`}
-        >
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${poppins.variable} ${poppins.className} antialiased`}>
+        <Providers>
           {children}
-          <Toaster />
-        </body>
-      </Providers>
+          <Toaster />{" "}
+        </Providers>
+      </body>
     </html>
   );
 }
