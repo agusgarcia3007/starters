@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

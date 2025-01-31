@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
+import { cookies } from "next/headers";
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  const token = (await cookies()).get("token")?.value;
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -9,8 +11,8 @@ export default function Home() {
           <div className="flex items-center space-x-2">
             <span className="font-bold">Starters App</span>
           </div>
-          <Link href="/login">
-            <Button variant="secondary">Login</Button>
+          <Link href={token ? "/profile" : "/login"}>
+            <Button variant="secondary">{token ? "Profile" : "Login"}</Button>
           </Link>
         </div>
       </header>

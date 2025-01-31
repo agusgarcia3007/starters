@@ -22,7 +22,7 @@ export const useLoginMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setCookie("token", data.token);
-      router.push("/protected");
+      router.push("/profile");
     },
     onError: (error) => catchAxiosError(error),
   });
@@ -48,7 +48,7 @@ export const useSignupMutation = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       setCookie("token", data.token);
-      router.push("/protected");
+      router.push("/profile");
     },
     onError: (error) => catchAxiosError(error),
   });
