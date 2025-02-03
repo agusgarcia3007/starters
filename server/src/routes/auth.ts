@@ -2,18 +2,15 @@ import { db } from "@/db";
 import { sessionsTable, usersTable, type UsersInsert } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/hashing";
 import { createSession } from "@/lib/sessions";
-import { authMiddleware } from "@/middlewares/auth";
-import { zValidator } from "@hono/zod-validator";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { authMiddleware } from "@/middlewares/auth";
 import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
 
-type Variables = {
-  userId: string;
-};
+const auth = new Hono();
 
-const auth = new Hono<{ Variables: Variables }>();
-
+// Schemas de validación
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required").trim(),
   email: z.string().email("Invalid email format").toLowerCase().trim(),
@@ -27,22 +24,22 @@ const loginSchema = z.object({
 
 auth.post("/signup", zValidator("json", signupSchema), async (c) => {
   try {
-    const data = c.req.valid("json");
+    const { name, email, password } = c.req.valid("json");
 
     const [existingUser] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, data.email));
+      .where(eq(usersTable.email, email));
 
     if (existingUser) {
       return c.json({ error: "Email already exists" }, 400);
     }
 
-    const hashedPassword = await hashPassword(data.password);
+    const hashedPassword = await hashPassword(password);
 
     const user: UsersInsert = {
-      name: data.name,
-      email: data.email,
+      name,
+      email,
       password: hashedPassword,
     };
 
@@ -66,18 +63,18 @@ auth.post("/signup", zValidator("json", signupSchema), async (c) => {
 
 auth.post("/login", zValidator("json", loginSchema), async (c) => {
   try {
-    const data = await c.req.valid("json");
+    const { email, password } = c.req.valid("json");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, data.email));
+      .where(eq(usersTable.email, email));
 
     if (!user) {
       return c.json({ error: "Invalid credentials" }, 400);
     }
 
-    const isValid = await verifyPassword(data.password, user.password);
+    const isValid = await verifyPassword(password, user.password);
 
     if (!isValid) {
       return c.json({ error: "Invalid credentials" }, 400);
