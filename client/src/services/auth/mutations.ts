@@ -1,7 +1,6 @@
 import { catchAxiosError } from "@/lib/catch-axios-error";
 import { AuthService } from "@/services/auth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteCookie, setCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
 
 export const useLoginMutation = () => {
@@ -21,7 +20,7 @@ export const useLoginMutation = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      setCookie("token", data.token);
+      sessionStorage.setItem("token", data.token);
       router.push("/profile");
     },
     onError: (error) => catchAxiosError(error),
@@ -47,7 +46,7 @@ export const useSignupMutation = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      setCookie("token", data.token);
+      sessionStorage.setItem("token", data.token);
       router.push("/profile");
     },
     onError: (error) => catchAxiosError(error),
@@ -64,7 +63,7 @@ export const useLogoutMutation = () => {
       return response.data;
     },
     onSuccess: () => {
-      deleteCookie("token");
+      sessionStorage.removeItem("token");
       queryClient.clear();
       router.push("/login");
     },

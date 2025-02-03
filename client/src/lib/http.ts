@@ -1,6 +1,4 @@
 import axios from "axios";
-import { getCookie, deleteCookie } from "cookies-next";
-import { redirect } from "next/navigation";
 
 const http = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -12,7 +10,7 @@ const http = axios.create({
 // Request interceptor
 http.interceptors.request.use(
   (config) => {
-    const token = getCookie("token");
+    const token = sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,10 +27,8 @@ http.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Clear auth state
-      deleteCookie("token");
-
-      // Redirect to login
-      redirect("/login");
+      sessionStorage.removeItem("token");
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }

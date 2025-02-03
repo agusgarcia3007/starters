@@ -2,35 +2,47 @@ import { db } from "@/db";
 import { sessionsTable, usersTable, type UsersInsert } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/hashing";
 import { createSession } from "@/lib/sessions";
-import { eq, and, ne } from "drizzle-orm";
-import { Hono } from "hono";
 import { authMiddleware } from "@/middlewares/auth";
-import { sign } from "hono/jwt";
+import { zValidator } from "@hono/zod-validator";
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { z } from "zod";
 
-const auth = new Hono();
+type Variables = {
+  userId: string;
+};
 
-auth.post("/signup", async (c) => {
+const auth = new Hono<{ Variables: Variables }>();
+
+const signupSchema = z.object({
+  name: z.string().min(1, "Name is required").trim(),
+  email: z.string().email("Invalid email format").toLowerCase().trim(),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
+});
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email format").toLowerCase().trim(),
+  password: z.string().min(1, "Password is required"),
+});
+
+auth.post("/signup", zValidator("json", signupSchema), async (c) => {
   try {
-    const { name, email, password } = await c.req.json();
-
-    if (!name || !email || !password) {
-      return c.json({ error: "Missing required fields" }, 400);
-    }
-
-    const hashedPassword = await hashPassword(password);
+    const data = c.req.valid("json");
 
     const [existingUser] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, email));
+      .where(eq(usersTable.email, data.email));
 
     if (existingUser) {
       return c.json({ error: "Email already exists" }, 400);
     }
 
+    const hashedPassword = await hashPassword(data.password);
+
     const user: UsersInsert = {
-      name,
-      email,
+      name: data.name,
+      email: data.email,
       password: hashedPassword,
     };
 
@@ -52,23 +64,23 @@ auth.post("/signup", async (c) => {
   }
 });
 
-auth.post("/login", async (c) => {
+auth.post("/login", zValidator("json", loginSchema), async (c) => {
   try {
-    const { email, password } = await c.req.json();
+    const data = await c.req.valid("json");
 
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, email));
+      .where(eq(usersTable.email, data.email));
 
     if (!user) {
-      return c.json({ error: "Invalid credentials" }, 401);
+      return c.json({ error: "Invalid credentials" }, 400);
     }
 
-    const isValid = await verifyPassword(password, user.password);
+    const isValid = await verifyPassword(data.password, user.password);
 
     if (!isValid) {
-      return c.json({ error: "Invalid credentials" }, 401);
+      return c.json({ error: "Invalid credentials" }, 400);
     }
 
     // Invalidar sesiones anteriores
@@ -77,7 +89,7 @@ auth.post("/login", async (c) => {
       .set({ isValid: false })
       .where(eq(sessionsTable.userId, user.id));
 
-    // Crear nueva sesión usando la función createSession
+    // Crear nueva sesión
     const session = await createSession(user.id, c.req.header("user-agent"));
 
     return c.json({
@@ -94,19 +106,15 @@ auth.post("/login", async (c) => {
   }
 });
 
-auth.post("/logout", async (c) => {
+auth.post("/logout", authMiddleware, async (c) => {
   try {
     const token = c.req.header("Authorization")?.replace("Bearer ", "");
-
-    if (!token) {
-      return c.json({ error: "No token provided" }, 401);
-    }
 
     // Invalidate the session
     await db
       .update(sessionsTable)
       .set({ isValid: false })
-      .where(eq(sessionsTable.token, token));
+      .where(eq(sessionsTable.token, token!));
 
     return c.json({ message: "Logged out successfully" });
   } catch (error) {
